@@ -15,7 +15,11 @@ class ContactData extends React.Component {
           type: 'text',
           placeholder: 'your name'
         },
-        value: ''
+        value: '',
+        validation: {
+          required: true
+        },
+        valid: false
       },
       street: {
         elementType: 'input',
@@ -23,7 +27,11 @@ class ContactData extends React.Component {
           type: 'text',
           placeholder: 'your street'
         },
-        value: ''
+        value: '',
+        validation: {
+          required: true
+        },
+        valid: false
       },
       postCode: {
         elementType: 'input',
@@ -31,7 +39,13 @@ class ContactData extends React.Component {
           type: 'text',
           placeholder: 'your postcode'
         },
-        value: ''
+        value: '',
+        validation: {
+          required: true,
+          minLength: 5,
+          maxLength: 5
+        },
+        valid: false
       },
       country: {
         elementType: 'input',
@@ -39,7 +53,11 @@ class ContactData extends React.Component {
           type: 'text',
           placeholder: 'your country'
         },
-        value: ''
+        value: '',
+        validation: {
+          required: true
+        },
+        valid: false
       },
       email: {
         elementType: 'input',
@@ -47,7 +65,11 @@ class ContactData extends React.Component {
           type: 'email',
           placeholder: 'your email'
         },
-        value: ''
+        value: '',
+        validation: {
+          required: true
+        },
+        valid: false
       },
       deliveryMethod: {
         elementType: 'select',
@@ -66,19 +88,14 @@ class ContactData extends React.Component {
   orderHandler = (e) => {
     e.preventDefault();
     this.setState({loading: true});
+    const formData = {};
+    for (let formElementId in this.state.orderForm) {
+      formData[formElementId] = this.state.orderForm[formElementId].value;
+    }
     const order = {
       ingredients: this.props.ingredients,
       price: this.props.price, // don't send price in real app
-      customer: {
-        name: 'Edward Smith',
-        address: {
-          street: 'Test Street',
-          postCode: 'AHGSJD',
-          country: 'UK'
-        },
-        email: 'test@test.com'
-      },
-      deliveryMethod: 'fastest'
+      orderData: formData
     }
     axios.post('/orders.json', order)
       .then(response => {
@@ -89,6 +106,20 @@ class ContactData extends React.Component {
       });
   }
 
+  checkValidity (value, rules) {
+    let isValid = true;
+    if (rules.required) {
+      isValid = value.trim() !== '' && isValid;
+    }
+    if (rules.minLength) {
+      isValid = value.length >= rules.minLength  && isValid;
+    }
+    if (rules.maxLength) {
+      isValid = value.length <= rules.maxLength  && isValid;
+    }
+    return isValid;
+  }
+
   inputChangedHandler = (e, inputId) => {
     const updatedOrderForm = {
       ...this.state.orderForm
@@ -96,8 +127,8 @@ class ContactData extends React.Component {
     const updatedFormElement = {
       ...updatedOrderForm[inputId]
     }
-
     updatedFormElement.value = e.target.value;
+    updatedFormElement.valid = this.checkValidity(updatedFormElement.value, updatedFormElement.validation);
     updatedOrderForm[inputId] = updatedFormElement;
 
     this.setState({orderForm: updatedOrderForm});
@@ -113,7 +144,7 @@ class ContactData extends React.Component {
     }
 
     let form = (
-      <form>
+      <form onSubmit={this.orderHandler}>
         {formElementsArray.map(formElement => (
           <Input
             key={formElement.id}
@@ -121,7 +152,7 @@ class ContactData extends React.Component {
             elementConfig={formElement.config.elementConfig}
             value={formElement.config.value}
             changed={(e) => this.inputChangedHandler(e, formElement.id)} />
-        ))};
+        ))}
         <Button btnType="Success" clicked={this.orderHandler}>Order</Button>
       </form>
     );
